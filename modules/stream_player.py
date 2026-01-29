@@ -124,9 +124,11 @@ class StreamPlayer:
             # Netzwerk
             '--network-timeout=10',
             '--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=2',
-            # Audio
+            # Audio - use HDMI-1 (card 1) for audio output
             '--audio-channels=stereo',
             '--volume=100',
+            '--ao=alsa',
+            '--alsa-device=hw:1,0',
         ]
         
         # Hardware-Beschleunigung für Raspberry Pi
@@ -147,7 +149,7 @@ class StreamPlayer:
             '--vo=drm',
             '--drm-device=/dev/dri/card1',  # Raspberry Pi HDMI auf card1
             '--drm-connector=HDMI-A-1',
-            '--drm-mode=1',  # Modus 1 = 1920x1080@60Hz (Nummer, nicht String)
+            '--drm-mode=0',  # Modus 0 = automatische Auswahl
         ])
         logger.info("Verwende DRM Video-Output (Konsole)")
         
