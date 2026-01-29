@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream Display Server</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+        
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background: var(--bg-card) !important;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+        }
+        
+        .card-header {
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .form-control, .form-select {
+            background: var(--bg-dark);
+            border-color: rgba(255,255,255,0.2);
+            color: var(--text-primary);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            background: var(--bg-dark);
+            border-color: var(--primary-color);
+            color: var(--text-primary);
+            box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.25);
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        
+        .status-playing {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+        
+        .status-stopped {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-secondary);
+        }
+        
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+        
+        .status-reconnecting {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+        
+        .stream-card {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .stream-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+        }
+        
+        .stream-card.active {
+            border-color: var(--success);
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--text-secondary);
+            border: none;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            color: var(--text-primary);
+            border-color: transparent;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary-color);
+            background: transparent;
+            border-bottom-color: var(--primary-color);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .toast-container {
+            z-index: 1100;
+        }
+        
+        .form-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .system-info {
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-broadcast me-2"></i>
+                Stream Display Server
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <span id="mqtt-status" class="status-badge status-stopped">
+                    <i class="bi bi-wifi"></i>
+                    <span>MQTT</span>
+                </span>
+                <span id="stream-status" class="status-badge status-stopped">
+                    <i class="bi bi-camera-video"></i>
+                    <span>Gestoppt</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container-fluid py-4">
+        <div class="row g-4">
+            <!-- Linke Spalte: Steuerung -->
+            <div class="col-lg-8">
+                <!-- Stream Steuerung -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-play-circle me-2"></i>Stream Steuerung</h5>
+                        <button class="btn btn-danger btn-sm" onclick="stopStream()">
+                            <i class="bi bi-stop-fill me-1"></i>Stoppen
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-9">
+                                <input type="text" class="form-control" id="stream-url" 
+                                       placeholder="rtsp://server:port/stream">
+                            </div>
+                            <div class="col-md-3">
+                                <button class="btn btn-primary w-100" onclick="playStreamUrl()">
+                                    <i class="bi bi-play-fill me-1"></i>Abspielen
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <hr class="border-secondary">
+                        
+                        <h6 class="text-secondary mb-3">Verfügbare Streams</h6>
+                        <div class="row g-3" id="streams-container">
+                            <!-- Streams werden hier geladen -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Einstellungen Tabs -->
+                <div class="card">
+                    <div class="card-header">
+                        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                            <li class="nav-item">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-mqtt">
+                                    <i class="bi bi-broadcast-pin me-1"></i>MQTT
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-unifi">
+                                    <i class="bi bi-camera-video me-1"></i>UniFi Protect
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-streams">
+                                    <i class="bi bi-collection-play me-1"></i>Streams
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-player">
+                                    <i class="bi bi-sliders me-1"></i>Player
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body">
+                        <div class="tab-content">
+                            <!-- MQTT Tab -->
+                            <div class="tab-pane fade show active" id="tab-mqtt">
+                                <form id="mqtt-form">
+                                    <div class="row g-3">
+                                        <div class="col-md-8">
+                                            <label class="form-label">MQTT Broker</label>
+                                            <input type="text" class="form-control" id="mqtt-broker" placeholder="localhost">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">Port</label>
+                                            <input type="number" class="form-control" id="mqtt-port" value="1883">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Benutzername (optional)</label>
+                                            <input type="text" class="form-control" id="mqtt-username">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Passwort (optional)</label>
+                                            <input type="password" class="form-control" id="mqtt-password">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Topic Prefix</label>
+                                            <input type="text" class="form-control" id="mqtt-prefix" value="streamdisplay">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Client ID</label>
+                                            <input type="text" class="form-control" id="mqtt-clientid" value="streamdisplay-server">
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- UniFi Tab -->
+                            <div class="tab-pane fade" id="tab-unifi">
+                                <form id="unifi-form">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="unifi-enabled">
+                                                <label class="form-check-label" for="unifi-enabled">UniFi Protect aktivieren</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">UniFi Protect URL</label>
+                                            <input type="text" class="form-control" id="unifi-url" placeholder="https://192.168.1.1">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Benutzername</label>
+                                            <input type="text" class="form-control" id="unifi-username">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Passwort</label>
+                                            <input type="password" class="form-control" id="unifi-password">
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="unifi-ssl">
+                                                <label class="form-check-label" for="unifi-ssl">SSL-Zertifikat verifizieren</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="button" class="btn btn-outline-primary" onclick="testUnifi()">
+                                                <i class="bi bi-plug me-1"></i>Verbindung testen
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Streams Tab -->
+                            <div class="tab-pane fade" id="tab-streams">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Standard-Stream nach Boot</label>
+                                        <select class="form-select" id="default-stream">
+                                            <option value="">Keiner</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Fallback-Bild</label>
+                                        <div class="input-group">
+                                            <input type="file" class="form-control" id="fallback-image" accept="image/*">
+                                            <button class="btn btn-outline-primary" onclick="uploadFallback()">
+                                                <i class="bi bi-upload"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-12">
+                                        <hr class="border-secondary">
+                                        <h6 class="text-secondary mb-3">Neuen Stream hinzufügen</h6>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control" id="new-stream-name" placeholder="Stream Name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control" id="new-stream-url" placeholder="rtsp://...">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button class="btn btn-success w-100" onclick="addStream()">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="col-12">
+                                        <table class="table table-dark table-hover" id="streams-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>URL</th>
+                                                    <th>Typ</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Player Tab -->
+                            <div class="tab-pane fade" id="tab-player">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="player-hwaccel" checked>
+                                            <label class="form-check-label" for="player-hwaccel">Hardware-Beschleunigung aktivieren</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Buffer Zeit (ms)</label>
+                                        <input type="number" class="form-control" id="player-buffer" value="500" min="0" max="5000">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Reconnect Verzögerung (ms)</label>
+                                        <input type="number" class="form-control" id="player-reconnect" value="2000" min="500" max="10000">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Max. Reconnect Versuche</label>
+                                        <input type="number" class="form-control" id="player-max-reconnect" value="10" min="1" max="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="border-secondary my-4">
+                        
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary" onclick="saveConfig()">
+                                <i class="bi bi-save me-1"></i>Speichern
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="loadConfig()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Zurücksetzen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rechte Spalte: Status & System -->
+            <div class="col-lg-4">
+                <!-- Aktueller Stream -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-camera-video me-2"></i>Aktueller Stream</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="current-stream-info">
+                            <p class="text-secondary mb-0">Kein Stream aktiv</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- System Info -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-cpu me-2"></i>System</h5>
+                    </div>
+                    <div class="card-body system-info">
+                        <div class="mb-2">
+                            <span class="text-secondary">Hostname:</span>
+                            <span id="sys-hostname">-</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-secondary">Temperatur:</span>
+                            <span id="sys-temp">-</span>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-secondary">Uptime:</span>
+                            <span id="sys-uptime">-</span>
+                        </div>
+                        <hr class="border-secondary">
+                        <button class="btn btn-outline-warning btn-sm" onclick="restartService()">
+                            <i class="bi bi-arrow-repeat me-1"></i>Service neustarten
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- MQTT Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-broadcast-pin me-2"></i>MQTT Topics</h5>
+                    </div>
+                    <div class="card-body system-info">
+                        <div class="mb-2">
+                            <code id="mqtt-topic-prefix">streamdisplay</code>/switch
+                        </div>
+                        <div class="mb-2">
+                            <code id="mqtt-topic-prefix2">streamdisplay</code>/stop
+                        </div>
+                        <div class="mb-2">
+                            <code id="mqtt-topic-prefix3">streamdisplay</code>/status
+                        </div>
+                        <div class="mb-2">
+                            <code id="mqtt-topic-prefix4">streamdisplay</code>/cameras
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="toast" class="toast" role="alert">
+            <div class="toast-header bg-dark text-white">
+                <i class="bi bi-info-circle me-2" id="toast-icon"></i>
+                <strong class="me-auto" id="toast-title">Hinweis</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body bg-dark text-white" id="toast-body"></div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toast Helper
+        function showToast(title, message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-body').textContent = message;
+            
+            const icons = {
+                'success': 'bi-check-circle text-success',
+                'error': 'bi-x-circle text-danger',
+                'warning': 'bi-exclamation-circle text-warning',
+                'info': 'bi-info-circle text-info'
+            };
+            
+            icon.className = 'bi me-2 ' + (icons[type] || icons.info);
+            
+            new bootstrap.Toast(toast).show();
+        }
+        
+        // API Helper
+        async function api(endpoint, options = {}) {
+            try {
+                const response = await fetch(`/api${endpoint}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
+        }
+        
+        // Status aktualisieren
+        async function updateStatus() {
+            try {
+                const data = await api('/status');
+                
+                // Stream Status
+                const statusEl = document.getElementById('stream-status');
+                const statusText = statusEl.querySelector('span');
+                statusEl.className = 'status-badge status-' + data.status;
+                
+                const statusTexts = {
+                    'playing': 'Läuft',
+                    'stopped': 'Gestoppt',
+                    'error': 'Fehler',
+                    'reconnecting': 'Verbinde...'
+                };
+                statusText.textContent = statusTexts[data.status] || data.status;
+                
+                // MQTT Status
+                const mqttEl = document.getElementById('mqtt-status');
+                mqttEl.className = 'status-badge ' + (data.mqtt_connected ? 'status-playing' : 'status-stopped');
+                
+                // Aktueller Stream
+                const streamInfo = document.getElementById('current-stream-info');
+                if (data.current_stream) {
+                    streamInfo.innerHTML = `
+                        <p class="mb-1"><strong>URL:</strong></p>
+                        <code class="text-break">${data.current_stream}</code>
+                    `;
+                } else {
+                    streamInfo.innerHTML = '<p class="text-secondary mb-0">Kein Stream aktiv</p>';
+                }
+                
+            } catch (error) {
+                console.error('Status update error:', error);
+            }
+        }
+        
+        // Streams laden
+        async function loadStreams() {
+            try {
+                const data = await api('/streams');
+                const container = document.getElementById('streams-container');
+                const table = document.querySelector('#streams-table tbody');
+                const defaultSelect = document.getElementById('default-stream');
+                
+                container.innerHTML = '';
+                table.innerHTML = '';
+                
+                // Default Stream Select aktualisieren
+                defaultSelect.innerHTML = '<option value="">Keiner</option>';
+                
+                data.forEach(stream => {
+                    // Stream Karten
+                    container.innerHTML += `
+                        <div class="col-md-4">
+                            <div class="card stream-card" onclick="playStream('${stream.id}')">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-${stream.type === 'unifi' ? 'camera' : 'broadcast'} fs-1 mb-2"></i>
+                                    <h6 class="mb-1">${stream.name}</h6>
+                                    <small class="text-secondary">${stream.type}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Tabelle
+                    table.innerHTML += `
+                        <tr>
+                            <td>${stream.name}</td>
+                            <td><code class="text-break small">${stream.url}</code></td>
+                            <td><span class="badge bg-secondary">${stream.type}</span></td>
+                            <td>
+                                ${stream.type === 'custom' ? 
+                                    `<button class="btn btn-outline-danger btn-sm" onclick="deleteStream('${stream.id}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>` : ''
+                                }
+                            </td>
+                        </tr>
+                    `;
+                    
+                    // Default Select
+                    defaultSelect.innerHTML += `<option value="${stream.url}">${stream.name}</option>`;
+                });
+                
+            } catch (error) {
+                console.error('Streams load error:', error);
+            }
+        }
+        
+        // Konfiguration laden
+        async function loadConfig() {
+            try {
+                const config = await api('/config');
+                
+                // MQTT
+                document.getElementById('mqtt-broker').value = config.mqtt?.broker || '';
+                document.getElementById('mqtt-port').value = config.mqtt?.port || 1883;
+                document.getElementById('mqtt-username').value = config.mqtt?.username || '';
+                document.getElementById('mqtt-password').value = config.mqtt?.password || '';
+                document.getElementById('mqtt-prefix').value = config.mqtt?.topic_prefix || 'streamdisplay';
+                document.getElementById('mqtt-clientid').value = config.mqtt?.client_id || '';
+                
+                // UniFi
+                document.getElementById('unifi-enabled').checked = config.unifi_protect?.enabled || false;
+                document.getElementById('unifi-url').value = config.unifi_protect?.url || '';
+                document.getElementById('unifi-username').value = config.unifi_protect?.username || '';
+                document.getElementById('unifi-password').value = config.unifi_protect?.password || '';
+                document.getElementById('unifi-ssl').checked = config.unifi_protect?.verify_ssl || false;
+                
+                // Streams
+                document.getElementById('default-stream').value = config.streams?.default_stream || '';
+                
+                // Player
+                document.getElementById('player-hwaccel').checked = config.player?.hardware_acceleration ?? true;
+                document.getElementById('player-buffer').value = config.player?.buffer_time_ms || 500;
+                document.getElementById('player-reconnect').value = config.player?.reconnect_delay_ms || 2000;
+                document.getElementById('player-max-reconnect').value = config.player?.max_reconnect_attempts || 10;
+                
+                // MQTT Topic Prefix in Anzeige
+                const prefix = config.mqtt?.topic_prefix || 'streamdisplay';
+                document.querySelectorAll('[id^="mqtt-topic-prefix"]').forEach(el => {
+                    el.textContent = prefix;
+                });
+                
+            } catch (error) {
+                showToast('Fehler', 'Konfiguration konnte nicht geladen werden', 'error');
+            }
+        }
+        
+        // Konfiguration speichern
+        async function saveConfig() {
+            try {
+                const config = {
+                    mqtt: {
+                        broker: document.getElementById('mqtt-broker').value,
+                        port: parseInt(document.getElementById('mqtt-port').value),
+                        username: document.getElementById('mqtt-username').value,
+                        password: document.getElementById('mqtt-password').value,
+                        topic_prefix: document.getElementById('mqtt-prefix').value,
+                        client_id: document.getElementById('mqtt-clientid').value
+                    },
+                    unifi_protect: {
+                        enabled: document.getElementById('unifi-enabled').checked,
+                        url: document.getElementById('unifi-url').value,
+                        username: document.getElementById('unifi-username').value,
+                        password: document.getElementById('unifi-password').value,
+                        verify_ssl: document.getElementById('unifi-ssl').checked
+                    },
+                    streams: {
+                        default_stream: document.getElementById('default-stream').value
+                    },
+                    player: {
+                        hardware_acceleration: document.getElementById('player-hwaccel').checked,
+                        buffer_time_ms: parseInt(document.getElementById('player-buffer').value),
+                        reconnect_delay_ms: parseInt(document.getElementById('player-reconnect').value),
+                        max_reconnect_attempts: parseInt(document.getElementById('player-max-reconnect').value)
+                    }
+                };
+                
+                const result = await api('/config', {
+                    method: 'POST',
+                    body: JSON.stringify(config)
+                });
+                
+                if (result.success) {
+                    showToast('Gespeichert', 'Konfiguration wurde gespeichert', 'success');
+                } else {
+                    showToast('Fehler', result.error || 'Speichern fehlgeschlagen', 'error');
+                }
+                
+            } catch (error) {
+                showToast('Fehler', 'Konfiguration konnte nicht gespeichert werden', 'error');
+            }
+        }
+        
+        // Stream abspielen (URL)
+        async function playStreamUrl() {
+            const url = document.getElementById('stream-url').value;
+            if (!url) {
+                showToast('Hinweis', 'Bitte Stream-URL eingeben', 'warning');
+                return;
+            }
+            
+            try {
+                const result = await api('/play', {
+                    method: 'POST',
+                    body: JSON.stringify({ url })
+                });
+                
+                if (result.success) {
+                    showToast('Gestartet', 'Stream wird abgespielt', 'success');
+                    updateStatus();
+                } else {
+                    showToast('Fehler', result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Fehler', 'Stream konnte nicht gestartet werden', 'error');
+            }
+        }
+        
+        // Stream abspielen (ID)
+        async function playStream(streamId) {
+            try {
+                const result = await api('/play', {
+                    method: 'POST',
+                    body: JSON.stringify({ stream_id: streamId })
+                });
+                
+                if (result.success) {
+                    showToast('Gestartet', 'Stream wird abgespielt', 'success');
+                    updateStatus();
+                } else {
+                    showToast('Fehler', result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Fehler', 'Stream konnte nicht gestartet werden', 'error');
+            }
+        }
+        
+        // Stream stoppen
+        async function stopStream() {
+            try {
+                await api('/stop', { method: 'POST' });
+                showToast('Gestoppt', 'Stream wurde gestoppt', 'success');
+                updateStatus();
+            } catch (error) {
+                showToast('Fehler', 'Stream konnte nicht gestoppt werden', 'error');
+            }
+        }
+        
+        // Stream hinzufügen
+        async function addStream() {
+            const name = document.getElementById('new-stream-name').value;
+            const url = document.getElementById('new-stream-url').value;
+            
+            if (!name || !url) {
+                showToast('Hinweis', 'Bitte Name und URL eingeben', 'warning');
+                return;
+            }
+            
+            try {
+                const result = await api('/streams', {
+                    method: 'POST',
+                    body: JSON.stringify({ name, url })
+                });
+                
+                if (result.success) {
+                    showToast('Hinzugefügt', 'Stream wurde hinzugefügt', 'success');
+                    document.getElementById('new-stream-name').value = '';
+                    document.getElementById('new-stream-url').value = '';
+                    loadStreams();
+                } else {
+                    showToast('Fehler', result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Fehler', 'Stream konnte nicht hinzugefügt werden', 'error');
+            }
+        }
+        
+        // Stream löschen
+        async function deleteStream(streamId) {
+            if (!confirm('Stream wirklich löschen?')) return;
+            
+            try {
+                const result = await api(`/streams/${streamId}`, { method: 'DELETE' });
+                
+                if (result.success) {
+                    showToast('Gelöscht', 'Stream wurde gelöscht', 'success');
+                    loadStreams();
+                } else {
+                    showToast('Fehler', result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Fehler', 'Stream konnte nicht gelöscht werden', 'error');
+            }
+        }
+        
+        // Fallback Bild hochladen
+        async function uploadFallback() {
+            const input = document.getElementById('fallback-image');
+            const file = input.files[0];
+            
+            if (!file) {
+                showToast('Hinweis', 'Bitte Bild auswählen', 'warning');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload/fallback', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('Hochgeladen', 'Fallback-Bild wurde gespeichert', 'success');
+                } else {
+                    showToast('Fehler', result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Fehler', 'Upload fehlgeschlagen', 'error');
+            }
+        }
+        
+        // UniFi testen
+        async function testUnifi() {
+            try {
+                const result = await api('/unifi/test', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        url: document.getElementById('unifi-url').value,
+                        username: document.getElementById('unifi-username').value,
+                        password: document.getElementById('unifi-password').value
+                    })
+                });
+                
+                if (result.success) {
+                    showToast('Verbunden', `${result.camera_count} Kameras gefunden`, 'success');
+                } else {
+                    showToast('Fehler', result.error, 'error');
+                }
+            } catch (error) {
+                showToast('Fehler', 'Verbindungstest fehlgeschlagen', 'error');
+            }
+        }
+        
+        // System Info laden
+        async function loadSystemInfo() {
+            try {
+                const data = await api('/system/info');
+                document.getElementById('sys-hostname').textContent = data.hostname || '-';
+                document.getElementById('sys-temp').textContent = data.temperature || '-';
+                document.getElementById('sys-uptime').textContent = data.uptime || '-';
+            } catch (error) {
+                console.error('System info error:', error);
+            }
+        }
+        
+        // Service neustarten
+        async function restartService() {
+            if (!confirm('Service wirklich neustarten?')) return;
+            
+            try {
+                await api('/system/restart', { method: 'POST' });
+                showToast('Neustart', 'Service wird neugestartet...', 'warning');
+            } catch (error) {
+                showToast('Fehler', 'Neustart fehlgeschlagen', 'error');
+            }
+        }
+        
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            loadStreams();
+            updateStatus();
+            loadSystemInfo();
+            
+            // Periodische Updates
+            setInterval(updateStatus, 5000);
+            setInterval(loadSystemInfo, 30000);
+        });
+    </script>
+</body>
+</html>

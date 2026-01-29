@@ -1,0 +1,335 @@
+{
+    "type": "full",
+    "version": 3,
+    "pages": [
+        {
+            "name": "Stream Display",
+            "controls": [
+                {
+                    "id": "1_0_0",
+                    "type": "button",
+                    "style": {
+                        "text": "Stream 1",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 2763306
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"stream_id\": \"stream_1\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_0_1",
+                    "type": "button",
+                    "style": {
+                        "text": "Stream 2",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 2763306
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"stream_id\": \"stream_2\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_0_2",
+                    "type": "button",
+                    "style": {
+                        "text": "Stream 3",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 2763306
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"stream_id\": \"stream_3\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_0_3",
+                    "type": "button",
+                    "style": {
+                        "text": "Stream 4",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 2763306
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"stream_id\": \"stream_4\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_1_0",
+                    "type": "button",
+                    "style": {
+                        "text": "Cam 1",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 5592405
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"camera_id\": \"camera_1\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_1_1",
+                    "type": "button",
+                    "style": {
+                        "text": "Cam 2",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 5592405
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"camera_id\": \"camera_2\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_1_2",
+                    "type": "button",
+                    "style": {
+                        "text": "Cam 3",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 5592405
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"camera_id\": \"camera_3\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_1_3",
+                    "type": "button",
+                    "style": {
+                        "text": "Cam 4",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 5592405
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/switch",
+                                            "payload": "{\"camera_id\": \"camera_4\"}",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_2_0",
+                    "type": "button",
+                    "style": {
+                        "text": "STOP",
+                        "size": "18",
+                        "color": 16777215,
+                        "bgcolor": 16711680
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/stop",
+                                            "payload": "",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_2_1",
+                    "type": "button",
+                    "style": {
+                        "text": "Reload",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 16744192
+                    },
+                    "feedbacks": [],
+                    "steps": [
+                        {
+                            "action_sets": {
+                                "down": [
+                                    {
+                                        "id": "mqtt_publish",
+                                        "instance": "mqtt",
+                                        "options": {
+                                            "topic": "streamdisplay/reload",
+                                            "payload": "",
+                                            "qos": 0,
+                                            "retain": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "id": "1_2_2",
+                    "type": "button",
+                    "style": {
+                        "text": "Status",
+                        "size": "14",
+                        "color": 16777215,
+                        "bgcolor": 32768
+                    },
+                    "feedbacks": [
+                        {
+                            "id": "mqtt_variable",
+                            "instance": "mqtt",
+                            "options": {
+                                "topic": "streamdisplay/status"
+                            }
+                        }
+                    ],
+                    "steps": []
+                }
+            ]
+        }
+    ],
+    "instances": [
+        {
+            "id": "mqtt",
+            "label": "MQTT",
+            "instance_type": "generic-mqtt",
+            "config": {
+                "broker_ip": "10.1.1.161",
+                "broker_port": 1883,
+                "username": "",
+                "password": "",
+                "client_id": "companion-streamdisplay"
+            }
+        }
+    ]
+}

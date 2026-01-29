@@ -1,0 +1,10 @@
+# Default Fallback Image Placeholder
+# Ersetze diese Datei mit deinem eigenen Logo/Bild
+
+# Das Bild wird angezeigt wenn:
+# - Kein Stream aktiv ist
+# - Der Stream unterbrochen wurde
+# - Ein Verbindungsfehler auftritt
+
+# Unterstützte Formate: PNG, JPG, JPEG, GIF, BMP
+# Empfohlene Auflösung: 1920x1080 (Full HD)
