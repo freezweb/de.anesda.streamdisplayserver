@@ -86,6 +86,7 @@ class UniFiProtectClient:
             if self.api_key:
                 # Verschiedene Header-Formate probieren
                 auth_headers = [
+                    {'X-API-Key': self.api_key},  # Korrektes Format für UniFi
                     {'X-API-KEY': self.api_key},
                     {'Authorization': f'Bearer {self.api_key}'},
                 ]
