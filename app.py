@@ -157,11 +157,14 @@ def get_status():
 def get_config():
     """Konfiguration abrufen"""
     config = config_manager.get_all()
-    # Passwörter maskieren
+    # Sensible Daten maskieren
     if 'mqtt' in config and 'password' in config['mqtt']:
         config['mqtt']['password'] = '***' if config['mqtt']['password'] else ''
-    if 'unifi_protect' in config and 'password' in config['unifi_protect']:
-        config['unifi_protect']['password'] = '***' if config['unifi_protect']['password'] else ''
+    if 'unifi_protect' in config:
+        if 'password' in config['unifi_protect']:
+            config['unifi_protect']['password'] = '***' if config['unifi_protect']['password'] else ''
+        if 'api_key' in config['unifi_protect']:
+            config['unifi_protect']['api_key'] = '***' if config['unifi_protect']['api_key'] else ''
     return jsonify(config)
 
 
@@ -171,12 +174,14 @@ def update_config():
     try:
         new_config = request.json
         
-        # Passwörter nur aktualisieren wenn geändert
+        # Sensible Daten nur aktualisieren wenn geändert
         current_config = config_manager.get_all()
         if new_config.get('mqtt', {}).get('password') == '***':
             new_config['mqtt']['password'] = current_config.get('mqtt', {}).get('password', '')
         if new_config.get('unifi_protect', {}).get('password') == '***':
             new_config['unifi_protect']['password'] = current_config.get('unifi_protect', {}).get('password', '')
+        if new_config.get('unifi_protect', {}).get('api_key') == '***':
+            new_config['unifi_protect']['api_key'] = current_config.get('unifi_protect', {}).get('api_key', '')
         
         config_manager.update(new_config)
         config_manager.save()

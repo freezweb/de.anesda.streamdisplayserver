@@ -311,6 +311,12 @@
                                         <div class="col-md-6">
                                             <label class="form-label">Topic Prefix</label>
                                             <input type="text" class="form-control" id="mqtt-prefix" value="streamdisplay">
+                                            <div class="form-text">Basis-Topic für MQTT (z.B. streamdisplay)</div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Device ID</label>
+                                            <input type="text" class="form-control" id="mqtt-device-id" placeholder="device1">
+                                            <div class="form-text">Eindeutige ID bei mehreren Displays (optional)</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label class="form-label">Client ID</label>
@@ -334,13 +340,10 @@
                                             <label class="form-label">UniFi Protect URL</label>
                                             <input type="text" class="form-control" id="unifi-url" placeholder="https://192.168.1.1">
                                         </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Benutzername</label>
-                                            <input type="text" class="form-control" id="unifi-username">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Passwort</label>
-                                            <input type="password" class="form-control" id="unifi-password">
+                                        <div class="col-12">
+                                            <label class="form-label">API Key</label>
+                                            <input type="password" class="form-control" id="unifi-api-key" placeholder="API Key aus UniFi Protect UI">
+                                            <div class="form-text">Erstellen unter: UniFi Protect → Einstellungen → API Authentifizierung</div>
                                         </div>
                                         <div class="col-12">
                                             <div class="form-check">
@@ -678,13 +681,13 @@
                 document.getElementById('mqtt-username').value = config.mqtt?.username || '';
                 document.getElementById('mqtt-password').value = config.mqtt?.password || '';
                 document.getElementById('mqtt-prefix').value = config.mqtt?.topic_prefix || 'streamdisplay';
+                document.getElementById('mqtt-device-id').value = config.mqtt?.device_id || '';
                 document.getElementById('mqtt-clientid').value = config.mqtt?.client_id || '';
                 
                 // UniFi
                 document.getElementById('unifi-enabled').checked = config.unifi_protect?.enabled || false;
                 document.getElementById('unifi-url').value = config.unifi_protect?.url || '';
-                document.getElementById('unifi-username').value = config.unifi_protect?.username || '';
-                document.getElementById('unifi-password').value = config.unifi_protect?.password || '';
+                document.getElementById('unifi-api-key').value = config.unifi_protect?.api_key || '';
                 document.getElementById('unifi-ssl').checked = config.unifi_protect?.verify_ssl || false;
                 
                 // Streams
@@ -717,13 +720,13 @@
                         username: document.getElementById('mqtt-username').value,
                         password: document.getElementById('mqtt-password').value,
                         topic_prefix: document.getElementById('mqtt-prefix').value,
+                        device_id: document.getElementById('mqtt-device-id').value,
                         client_id: document.getElementById('mqtt-clientid').value
                     },
                     unifi_protect: {
                         enabled: document.getElementById('unifi-enabled').checked,
                         url: document.getElementById('unifi-url').value,
-                        username: document.getElementById('unifi-username').value,
-                        password: document.getElementById('unifi-password').value,
+                        api_key: document.getElementById('unifi-api-key').value,
                         verify_ssl: document.getElementById('unifi-ssl').checked
                     },
                     streams: {
@@ -892,8 +895,7 @@
                     method: 'POST',
                     body: JSON.stringify({
                         url: document.getElementById('unifi-url').value,
-                        username: document.getElementById('unifi-username').value,
-                        password: document.getElementById('unifi-password').value
+                        api_key: document.getElementById('unifi-api-key').value
                     })
                 });
                 

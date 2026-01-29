@@ -30,6 +30,15 @@ class MQTTClient:
         """Setzt die UniFi Protect Client Referenz"""
         self._unifi_client = unifi_client
         logger.info("UniFi Protect Client registriert")
+    
+    def _get_topic_base(self) -> str:
+        """Generiert die Topic-Basis mit optionaler Device-ID"""
+        prefix = self.config.get('mqtt.topic_prefix', 'streamdisplay')
+        device_id = self.config.get('mqtt.device_id', '')
+        
+        if device_id:
+            return f"{prefix}/{device_id}"
+        return prefix
         
     def start(self):
         """Startet den MQTT Client"""
@@ -65,14 +74,16 @@ class MQTTClient:
             self.client.on_disconnect = self._on_disconnect
             self.client.on_message = self._on_message
             
-            # Last Will
-            prefix = self.config.get('mqtt.topic_prefix', 'streamdisplay')
+            # Last Will mit Device-ID Support
+            topic_base = self._get_topic_base()
             self.client.will_set(
-                f"{prefix}/status",
+                f"{topic_base}/status",
                 json.dumps({'status': 'offline'}),
                 qos=1,
                 retain=True
             )
+            
+            logger.info(f"MQTT Topic-Basis: {topic_base}")
             
             self.client.connect_async(broker, port, keepalive=60)
             self.client.loop_start()
@@ -94,14 +105,14 @@ class MQTTClient:
             self._connected = True
             logger.info("MQTT verbunden")
             
-            prefix = self.config.get('mqtt.topic_prefix', 'streamdisplay')
+            topic_base = self._get_topic_base()
             
             # Topics abonnieren
             topics = [
-                (f"{prefix}/switch", 0),
-                (f"{prefix}/stop", 0),
-                (f"{prefix}/reload", 0),
-                (f"{prefix}/command", 0),
+                (f"{topic_base}/switch", 0),
+                (f"{topic_base}/stop", 0),
+                (f"{topic_base}/reload", 0),
+                (f"{topic_base}/command", 0),
             ]
             
             for topic, qos in topics:
@@ -129,19 +140,19 @@ class MQTTClient:
     def _on_message(self, client, userdata, msg):
         """Callback bei eingehender Nachricht"""
         try:
-            prefix = self.config.get('mqtt.topic_prefix', 'streamdisplay')
+            topic_base = self._get_topic_base()
             topic = msg.topic
             payload = msg.payload.decode('utf-8') if msg.payload else ''
             
             logger.info(f"MQTT Nachricht empfangen: {topic} = {payload}")
             
-            if topic == f"{prefix}/switch":
+            if topic == f"{topic_base}/switch":
                 self._handle_switch(payload)
-            elif topic == f"{prefix}/stop":
+            elif topic == f"{topic_base}/stop":
                 self._handle_stop()
-            elif topic == f"{prefix}/reload":
+            elif topic == f"{topic_base}/reload":
                 self._handle_reload()
-            elif topic == f"{prefix}/command":
+            elif topic == f"{topic_base}/command":
                 self._handle_command(payload)
                 
         except Exception as e:
@@ -220,8 +231,8 @@ class MQTTClient:
         if not self._connected or not self.client:
             return
         
-        prefix = self.config.get('mqtt.topic_prefix', 'streamdisplay')
-        topic = f"{prefix}/{topic_suffix}"
+        topic_base = self._get_topic_base()
+        topic = f"{topic_base}/{topic_suffix}"
         
         try:
             self.client.publish(

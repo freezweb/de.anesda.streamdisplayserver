@@ -163,23 +163,40 @@ class StreamPlayer:
         logger.info(f"mpv gestartet (PID: {self._process.pid})")
     
     def _terminate_process(self, process: subprocess.Popen):
-        """Beendet einen Prozess sauber"""
-        if process and process.poll() is None:
-            try:
-                # Zuerst SIGTERM
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-                
-                # Warten
+        """Beendet einen Prozess sauber und räumt Zombies auf"""
+        if process is None:
+            return
+            
+        try:
+            # Prüfen ob Prozess noch läuft
+            if process.poll() is None:
                 try:
-                    process.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    # Dann SIGKILL
-                    os.killpg(os.getpgid(process.pid), signal.SIGKILL)
-                    process.wait()
+                    # Zuerst SIGTERM
+                    os.killpg(os.getpgid(process.pid), signal.SIGTERM)
                     
-                logger.debug(f"Prozess {process.pid} beendet")
-            except Exception as e:
-                logger.warning(f"Fehler beim Beenden des Prozesses: {e}")
+                    # Warten
+                    try:
+                        process.wait(timeout=2)
+                    except subprocess.TimeoutExpired:
+                        # Dann SIGKILL
+                        os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+                        process.wait(timeout=1)
+                        
+                    logger.debug(f"Prozess {process.pid} beendet")
+                except ProcessLookupError:
+                    # Prozess existiert nicht mehr
+                    pass
+                except Exception as e:
+                    logger.warning(f"Fehler beim Beenden des Prozesses: {e}")
+            
+            # Zombie-Prozesse aufräumen durch wait()
+            try:
+                process.wait(timeout=0.1)
+            except:
+                pass
+                
+        except Exception as e:
+            logger.warning(f"Fehler beim Aufräumen des Prozesses: {e}")
     
     def _start_monitor(self):
         """Startet den Monitor-Thread"""
