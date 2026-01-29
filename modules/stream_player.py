@@ -115,42 +115,17 @@ class StreamPlayer:
         # Hardware-Beschleunigung für Raspberry Pi
         if hw_accel:
             args.extend([
-                '--hwdec=auto',
+                '--hwdec=drm',
             ])
         
-        # Video-Output basierend auf Umgebung
-        # Prüfe ob Wayland oder X11 läuft
+        # Video-Output: DRM direkt auf Framebuffer (ohne Desktop)
         env = os.environ.copy()
-        
-        # Wayland hat Priorität
-        wayland_display = os.environ.get('WAYLAND_DISPLAY', '')
-        xdg_runtime = os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')
-        
-        # Prüfe ob Wayland-Socket existiert
-        wayland_socket = Path(xdg_runtime) / 'wayland-0'
-        if wayland_socket.exists() or wayland_display:
-            env['WAYLAND_DISPLAY'] = wayland_display or 'wayland-0'
-            env['XDG_RUNTIME_DIR'] = xdg_runtime
-            args.extend([
-                '--vo=gpu',
-                '--gpu-context=waylandvk',
-            ])
-            logger.info("Verwende Wayland Video-Output")
-        elif os.environ.get('DISPLAY'):
-            # X11 vorhanden
-            env['DISPLAY'] = os.environ.get('DISPLAY', ':0')
-            args.extend([
-                '--vo=gpu',
-                '--gpu-api=opengl',
-            ])
-            logger.info("Verwende X11 Video-Output")
-        else:
-            # Fallback: DRM direkt (ohne Desktop)
-            args.extend([
-                '--vo=drm',
-                '--drm-connector=HDMI-A-1',
-            ])
-            logger.info("Verwende DRM Video-Output (kein Desktop)")
+        args.extend([
+            '--vo=drm',
+            '--drm-connector=HDMI-A-1',
+            '--drm-mode=1920x1080',
+        ])
+        logger.info("Verwende DRM Video-Output (Konsole)")
         
         logger.debug(f"mpv Befehl: {' '.join(args)}")
         
