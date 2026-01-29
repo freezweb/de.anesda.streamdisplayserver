@@ -124,11 +124,10 @@ class StreamPlayer:
             # Netzwerk
             '--network-timeout=10',
             '--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=2',
-            # Audio - use HDMI-1 (card 1) for audio output
+            # Audio - use HDMI-1 for audio output
             '--audio-channels=stereo',
             '--volume=100',
-            '--ao=alsa',
-            '--alsa-device=hw:1,0',
+            '--audio-device=alsa/hdmi:CARD=vc4hdmi1,DEV=0',
         ]
         
         # Hardware-Beschleunigung für Raspberry Pi
