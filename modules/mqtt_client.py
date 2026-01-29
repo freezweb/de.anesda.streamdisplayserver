@@ -24,6 +24,12 @@ class MQTTClient:
         self._connected = False
         self._running = False
         self._thread = None
+        self._unifi_client = None
+    
+    def set_unifi_client(self, unifi_client):
+        """Setzt die UniFi Protect Client Referenz"""
+        self._unifi_client = unifi_client
+        logger.info("UniFi Protect Client registriert")
         
     def start(self):
         """Startet den MQTT Client"""
@@ -151,10 +157,17 @@ class MQTTClient:
             stream_id = data.get('stream_id')
             
             if camera_id:
-                # UniFi Kamera
-                from modules.unifi_protect import UniFiProtectClient
-                # TODO: Kamera-URL abrufen
-                pass
+                # UniFi Kamera - URL vom UniFi Client abrufen
+                if self._unifi_client:
+                    url = self._unifi_client.get_rtsp_url(camera_id)
+                    if url:
+                        logger.info(f"UniFi Kamera {camera_id} -> URL: {url}")
+                    else:
+                        logger.error(f"Keine RTSP-URL für Kamera {camera_id} gefunden")
+                        return
+                else:
+                    logger.error("UniFi Protect Client nicht verfügbar")
+                    return
             elif stream_id:
                 # Custom Stream
                 streams = self.config.get('streams.custom_streams', [])

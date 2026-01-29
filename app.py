@@ -77,6 +77,8 @@ def init_components():
     if config_manager.get('unifi_protect.enabled', False):
         unifi_client = UniFiProtectClient(config_manager, mqtt_client)
         unifi_client.start()
+        # MQTT Client mit UniFi Client verbinden
+        mqtt_client.set_unifi_client(unifi_client)
     
     # MQTT starten
     mqtt_client.start()
