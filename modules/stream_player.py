@@ -134,12 +134,11 @@ class StreamPlayer:
             '--volume=100',
         ]
         
-        # Hardware-Beschleunigung für Raspberry Pi
-        # Hinweis: hwdec=drm funktioniert oft nicht gut mit HEVC-Streams
-        # Verwende v4l2 oder deaktiviere für bessere Kompatibilität
+        # Hardware-Beschleunigung für Raspberry Pi 4
+        # v4l2m2m-copy nutzt den BCM2835 Hardware-Decoder
         if hw_accel:
             args.extend([
-                '--hwdec=v4l2',  # V4L2 für H.264, fällt bei HEVC auf Software zurück
+                '--hwdec=v4l2m2m-copy',  # BCM2835 Hardware H.264 Decoder
             ])
         else:
             args.extend([
