@@ -21,16 +21,24 @@ from modules.mqtt_client import MQTTClient
 from modules.stream_player import StreamPlayer
 from modules.unifi_protect import UniFiProtectClient
 
-# Logging konfigurieren
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler('/var/log/streamdisplay/server.log')
-    ]
-)
-logger = logging.getLogger(__name__)
+# Logging konfigurieren - verhindere doppelte Handler
+logger = logging.getLogger('streamdisplay')
+if not logger.handlers:
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    
+    # Console Handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    
+    # File Handler
+    file_handler = logging.FileHandler('/var/log/streamdisplay/server.log')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    
+    # Propagate auf False setzen um doppelte Logs zu vermeiden
+    logger.propagate = False
 
 # Flask App
 app = Flask(__name__, 

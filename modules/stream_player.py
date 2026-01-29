@@ -145,6 +145,7 @@ class StreamPlayer:
         env = os.environ.copy()
         args.extend([
             '--vo=drm',
+            '--drm-device=/dev/dri/card1',  # Raspberry Pi HDMI auf card1
             '--drm-connector=HDMI-A-1',
             '--drm-mode=1',  # Modus 1 = 1920x1080@60Hz (Nummer, nicht String)
         ])
