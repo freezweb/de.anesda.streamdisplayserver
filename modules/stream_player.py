@@ -111,19 +111,16 @@ class StreamPlayer:
             '--force-window=immediate',   # Fenster sofort erstellen
             '--keep-open=no',             # Nicht auf Eingabe warten am Ende
             '--idle=no',                  # Nicht im Idle-Modus starten
-            # Ultra-niedrige Latenz Einstellungen
+            # Niedrige Latenz Einstellungen
             '--profile=low-latency',
             '--untimed',
             '--no-cache',
-            '--cache-pause=no',
-            '--demuxer-lavf-o=fflags=+nobuffer+discardcorrupt+fastseek',
-            '--demuxer-lavf-analyzeduration=0',
+            '--demuxer-lavf-o=fflags=+nobuffer+discardcorrupt',
+            '--demuxer-lavf-analyzeduration=0.1',
             '--demuxer-lavf-probesize=32',
-            '--video-sync=display-desync',
+            '--video-sync=audio',
             '--interpolation=no',
             '--vd-lavc-threads=4',
-            '--framedrop=decoder+vo',
-            '--video-latency-hacks=yes',
             # Netzwerk
             '--network-timeout=10',
             '--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=2',
