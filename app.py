@@ -326,6 +326,24 @@ def get_unifi_cameras():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/unifi/snapshot/<camera_id>')
+def get_unifi_snapshot(camera_id):
+    """Snapshot von einer UniFi Protect Kamera abrufen"""
+    if not unifi_client:
+        return jsonify({'success': False, 'error': 'UniFi Protect nicht aktiviert'}), 400
+    
+    try:
+        snapshot = unifi_client.get_camera_snapshot(camera_id)
+        if snapshot:
+            from flask import Response
+            return Response(snapshot, mimetype='image/jpeg')
+        else:
+            # Fallback: transparentes Placeholder-Bild
+            return jsonify({'success': False, 'error': 'Snapshot nicht verfügbar'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/unifi/test', methods=['POST'])
 def test_unifi_connection():
     """UniFi Protect Verbindung testen"""

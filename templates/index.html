@@ -147,6 +147,62 @@
             font-family: monospace;
             font-size: 0.9rem;
         }
+        
+        /* Explizite Textfarben für alle Elemente */
+        .card-body, .card-header {
+            color: var(--text-primary);
+        }
+        
+        .card-body h5, .card-body h6, .card-header h5 {
+            color: var(--text-primary) !important;
+        }
+        
+        .table {
+            color: var(--text-primary);
+        }
+        
+        .table td, .table th {
+            color: var(--text-primary);
+            border-color: rgba(255,255,255,0.1);
+        }
+        
+        code {
+            color: #22d3ee !important;
+            background: rgba(34, 211, 238, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .stream-card .card-body h6 {
+            color: #ffffff !important;
+        }
+        
+        .stream-card .card-body i {
+            color: var(--primary-color) !important;
+        }
+        
+        /* Kamera-Vorschaubilder */
+        .camera-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+            background: #0f172a;
+        }
+        
+        .camera-preview-placeholder {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .form-check-label {
+            color: var(--text-primary);
+        }
     </style>
 </head>
 <body>
@@ -560,14 +616,27 @@
                 defaultSelect.innerHTML = '<option value="">Keiner</option>';
                 
                 data.forEach(stream => {
-                    // Stream Karten
+                    // Stream Karten mit Vorschaubild
+                    const hasSnapshot = stream.snapshot_url && stream.type === 'unifi';
                     container.innerHTML += `
-                        <div class="col-md-4">
+                        <div class="col-md-4 col-sm-6">
                             <div class="card stream-card" onclick="playStream('${stream.id}')">
-                                <div class="card-body text-center">
-                                    <i class="bi bi-${stream.type === 'unifi' ? 'camera' : 'broadcast'} fs-1 mb-2"></i>
-                                    <h6 class="mb-1">${stream.name}</h6>
-                                    <small class="text-secondary">${stream.type}</small>
+                                ${hasSnapshot ? 
+                                    `<img src="/api/unifi/snapshot/${stream.id}" class="camera-preview" 
+                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                                     <div class="camera-preview-placeholder" style="display:none;">
+                                        <i class="bi bi-camera-video fs-1 text-secondary"></i>
+                                     </div>` :
+                                    `<div class="camera-preview-placeholder">
+                                        <i class="bi bi-${stream.type === 'unifi' ? 'camera-video' : 'broadcast'} fs-1 text-secondary"></i>
+                                     </div>`
+                                }
+                                <div class="card-body text-center py-3">
+                                    <h6 class="mb-1 text-white">${stream.name}</h6>
+                                    <div class="d-flex justify-content-center align-items-center gap-2">
+                                        <small class="text-info">${stream.type}</small>
+                                        ${stream.state ? `<span class="badge ${stream.state === 'CONNECTED' ? 'bg-success' : 'bg-danger'}">${stream.state === 'CONNECTED' ? 'Online' : 'Offline'}</span>` : ''}
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -115,15 +115,22 @@ class StreamPlayer:
         # Hardware-Beschleunigung für Raspberry Pi
         if hw_accel:
             args.extend([
-                '--hwdec=drm',
+                '--hwdec=auto',
                 '--vo=gpu',
-                '--gpu-context=drm',
+                '--gpu-api=opengl',
+            ])
+        else:
+            args.extend([
+                '--vo=x11',
             ])
         
-        # DISPLAY setzen falls nicht vorhanden
+        # DISPLAY setzen für X11
         env = os.environ.copy()
-        if 'DISPLAY' not in env:
-            env['DISPLAY'] = ':0'
+        env['DISPLAY'] = ':0'
+        
+        # Für Wayland fallback
+        if 'WAYLAND_DISPLAY' in env:
+            args.extend(['--vo=gpu', '--gpu-context=wayland'])
         
         logger.debug(f"mpv Befehl: {' '.join(args)}")
         
