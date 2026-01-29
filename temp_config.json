@@ -1,0 +1,36 @@
+{
+    "mqtt": {
+        "broker": "mqtt.esrv.center",
+        "port": 1883,
+        "username": "vbnet",
+        "password": "vbnet",
+        "topic_prefix": "streamdisplay",
+        "client_id": "streamdisplay-server",
+        "device_id": "1"
+    },
+    "unifi_protect": {
+        "enabled": true,
+        "url": "https://10.1.250.2",
+        "api_key": "e01S1_ZLeE2iLLibnvztkZYAPtseEYlo",
+        "username": "",
+        "password": "",
+        "verify_ssl": false
+    },
+    "streams": {
+        "default_stream": "rtsps://10.1.250.2:7441/MWi3HdVgegoAVOP1?enableSrtp",
+        "fallback_image": "/opt/streamdisplay/uploads/fallback.gif",
+        "custom_streams": []
+    },
+    "player": {
+        "hardware_acceleration": true,
+        "buffer_time_ms": 500,
+        "reconnect_delay_ms": 2000,
+        "max_reconnect_attempts": 10
+    },
+    "webui": {
+        "port": 80,
+        "auth_enabled": false,
+        "username": "admin",
+        "password": "admin"
+    }
+}

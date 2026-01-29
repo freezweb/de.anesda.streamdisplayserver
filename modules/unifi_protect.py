@@ -358,20 +358,23 @@ class UniFiProtectClient:
             return f"{self.url}{self._active_api_path}/cameras/{camera_id}/snapshot"
         return f"{self.url}/proxy/protect/api/cameras/{camera_id}/snapshot"
     
-    def get_camera_snapshot(self, camera_id: str, high_quality: bool = True) -> Optional[bytes]:
+    def get_camera_snapshot(self, camera_id: str) -> Optional[bytes]:
         """Holt einen Snapshot von einer Kamera"""
         if not self._session or not self._active_api_path:
+            logger.warning(f"Snapshot nicht möglich: session={self._session is not None}, path={self._active_api_path}")
             return None
         
         try:
             # GET /cameras/{id}/snapshot (laut API-Dokumentation)
+            # Keine zusätzlichen Parameter - UniFi Integration API akzeptiert sie nicht
             url = f"{self.url}{self._active_api_path}/cameras/{camera_id}/snapshot"
-            params = {'highQuality': 'true' if high_quality else 'false'}
             
-            response = self._session.get(url, params=params, timeout=15)
+            response = self._session.get(url, timeout=15)
             
             if response.status_code == 200:
                 return response.content
+            else:
+                logger.warning(f"Snapshot fehlgeschlagen: HTTP {response.status_code}")
                 
         except Exception as e:
             logger.error(f"Snapshot abrufen fehlgeschlagen: {e}")
