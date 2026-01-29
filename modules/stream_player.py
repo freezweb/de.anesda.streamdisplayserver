@@ -116,21 +116,41 @@ class StreamPlayer:
         if hw_accel:
             args.extend([
                 '--hwdec=auto',
+            ])
+        
+        # Video-Output basierend auf Umgebung
+        # Prüfe ob Wayland oder X11 läuft
+        env = os.environ.copy()
+        
+        # Wayland hat Priorität
+        wayland_display = os.environ.get('WAYLAND_DISPLAY', '')
+        xdg_runtime = os.environ.get('XDG_RUNTIME_DIR', f'/run/user/{os.getuid()}')
+        
+        # Prüfe ob Wayland-Socket existiert
+        wayland_socket = Path(xdg_runtime) / 'wayland-0'
+        if wayland_socket.exists() or wayland_display:
+            env['WAYLAND_DISPLAY'] = wayland_display or 'wayland-0'
+            env['XDG_RUNTIME_DIR'] = xdg_runtime
+            args.extend([
+                '--vo=gpu',
+                '--gpu-context=waylandvk',
+            ])
+            logger.info("Verwende Wayland Video-Output")
+        elif os.environ.get('DISPLAY'):
+            # X11 vorhanden
+            env['DISPLAY'] = os.environ.get('DISPLAY', ':0')
+            args.extend([
                 '--vo=gpu',
                 '--gpu-api=opengl',
             ])
+            logger.info("Verwende X11 Video-Output")
         else:
+            # Fallback: DRM direkt (ohne Desktop)
             args.extend([
-                '--vo=x11',
+                '--vo=drm',
+                '--drm-connector=HDMI-A-1',
             ])
-        
-        # DISPLAY setzen für X11
-        env = os.environ.copy()
-        env['DISPLAY'] = ':0'
-        
-        # Für Wayland fallback
-        if 'WAYLAND_DISPLAY' in env:
-            args.extend(['--vo=gpu', '--gpu-context=wayland'])
+            logger.info("Verwende DRM Video-Output (kein Desktop)")
         
         logger.debug(f"mpv Befehl: {' '.join(args)}")
         

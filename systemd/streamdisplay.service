@@ -1,19 +1,28 @@
 [Unit]
 Description=Stream Display Server
-After=network.target mosquitto.service
+After=network.target mosquitto.service graphical.target
 Wants=network.target
 
 [Service]
 Type=simple
-User=root
+User=freezweb
+Group=freezweb
 WorkingDirectory=/opt/streamdisplay
+
+# Wayland/X11 Environment für Display-Zugriff
 Environment=DISPLAY=:0
-Environment=XAUTHORITY=/root/.Xauthority
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+
 ExecStart=/opt/streamdisplay/venv/bin/python /opt/streamdisplay/app.py
 Restart=always
 RestartSec=5
 StandardOutput=append:/var/log/streamdisplay/server.log
 StandardError=append:/var/log/streamdisplay/error.log
+
+# Port 80 braucht CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 # Hardening
 NoNewPrivileges=no
@@ -21,4 +30,4 @@ ProtectSystem=false
 ProtectHome=false
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=graphical.target
