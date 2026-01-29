@@ -226,7 +226,9 @@ def get_streams():
                 'id': cam['id'],
                 'name': cam['name'],
                 'url': cam['rtsp_url'],
-                'type': 'unifi'
+                'type': 'unifi',
+                'snapshot_url': f'/api/unifi/snapshot/{cam["id"]}',
+                'state': cam.get('state', '')
             })
     
     return jsonify(streams)
