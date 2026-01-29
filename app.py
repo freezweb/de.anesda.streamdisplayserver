@@ -132,12 +132,25 @@ def index():
 @app.route('/api/status')
 def get_status():
     """Aktueller Status"""
-    return jsonify({
-        'status': stream_player.get_status() if stream_player else 'stopped',
-        'current_stream': stream_player.get_current_stream() if stream_player else None,
-        'mqtt_connected': mqtt_client.is_connected() if mqtt_client else False,
-        'unifi_enabled': config_manager.get('unifi_protect.enabled', False) if config_manager else False
-    })
+    if stream_player:
+        detailed = stream_player.get_detailed_status()
+        return jsonify({
+            'status': detailed['status'],
+            'current_stream': detailed['stream'],
+            'process_running': detailed['process_running'],
+            'pid': detailed['pid'],
+            'mqtt_connected': mqtt_client.is_connected() if mqtt_client else False,
+            'unifi_enabled': config_manager.get('unifi_protect.enabled', False) if config_manager else False
+        })
+    else:
+        return jsonify({
+            'status': 'stopped',
+            'current_stream': None,
+            'process_running': False,
+            'pid': None,
+            'mqtt_connected': False,
+            'unifi_enabled': False
+        })
 
 
 @app.route('/api/config', methods=['GET'])

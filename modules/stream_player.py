@@ -43,20 +43,32 @@ class StreamPlayer:
             try:
                 self._start_mpv(url)
                 self._current_stream = url
-                self._status = 'playing'
+                self._status = 'starting'
                 
-                # Kurz warten bis neuer Stream läuft
-                time.sleep(0.5)
+                # Kurz warten und prüfen ob mpv noch läuft
+                time.sleep(1.0)
                 
-                # Dann alten Prozess beenden (nahtloser Übergang)
-                if old_process:
-                    self._terminate_process(old_process)
-                
-                # Fallback beenden falls aktiv
-                self._stop_fallback()
-                
-                # Monitor starten
-                self._start_monitor()
+                if self._process and self._process.poll() is None:
+                    # mpv läuft tatsächlich
+                    self._status = 'playing'
+                    logger.info("Stream läuft erfolgreich")
+                    
+                    # Dann alten Prozess beenden (nahtloser Übergang)
+                    if old_process:
+                        self._terminate_process(old_process)
+                    
+                    # Fallback beenden falls aktiv
+                    self._stop_fallback()
+                    
+                    # Monitor starten
+                    self._start_monitor()
+                else:
+                    # mpv ist sofort abgestürzt
+                    exit_code = self._process.returncode if self._process else -1
+                    logger.error(f"mpv sofort beendet mit Code {exit_code}")
+                    self._status = 'error'
+                    self._current_stream = url  # Behalte URL für Anzeige
+                    self._show_fallback()
                 
             except Exception as e:
                 logger.error(f"Fehler beim Starten des Streams: {e}")
@@ -200,9 +212,18 @@ class StreamPlayer:
                     
                     try:
                         self._start_mpv(self._current_stream)
-                        self._status = 'playing'
-                        # Bei Erfolg Zähler zurücksetzen
-                        attempts = 0
+                        # Kurz warten und prüfen ob mpv läuft
+                        time.sleep(1.0)
+                        
+                        if self._process and self._process.poll() is None:
+                            self._status = 'playing'
+                            logger.info("Reconnect erfolgreich - Stream läuft")
+                            # Bei Erfolg Zähler zurücksetzen
+                            attempts = 0
+                        else:
+                            exit_code = self._process.returncode if self._process else -1
+                            logger.warning(f"Reconnect fehlgeschlagen - mpv beendet mit Code {exit_code}")
+                            # Zähler nicht zurücksetzen, weiter versuchen
                     except Exception as e:
                         logger.error(f"Reconnect fehlgeschlagen: {e}")
                 else:
@@ -253,4 +274,21 @@ class StreamPlayer:
     
     def is_playing(self) -> bool:
         """Prüft ob ein Stream läuft"""
-        return self._status == 'playing' and self._process is not None
+        if self._status != 'playing':
+            return False
+        if self._process is None:
+            return False
+        # Prüfe ob Prozess noch läuft
+        if self._process.poll() is not None:
+            return False
+        return True
+    
+    def get_detailed_status(self) -> dict:
+        """Gibt detaillierten Status zurück"""
+        process_running = self._process is not None and self._process.poll() is None
+        return {
+            'status': self._status,
+            'stream': self._current_stream,
+            'process_running': process_running,
+            'pid': self._process.pid if self._process else None
+        }
