@@ -96,7 +96,8 @@ class StreamPlayer:
         hw_accel = self.config.get('player.hardware_acceleration', True)
         buffer_time = self.config.get('player.buffer_time_ms', 500)
         
-        # mpv Argumente für minimale Latenz
+        # mpv Argumente für minimale Latenz bei Live-RTSP-Streams
+        # WICHTIG: --no-audio verhindert A-V Desync bei Hardware-Dekodierung
         args = [
             'mpv',
             url,
@@ -111,27 +112,29 @@ class StreamPlayer:
             '--force-window=immediate',   # Fenster sofort erstellen
             '--keep-open=no',             # Nicht auf Eingabe warten am Ende
             '--idle=no',                  # Nicht im Idle-Modus starten
-            # Minimale Latenz - Frames droppen statt buffern
-            '--profile=low-latency',
-            '--untimed',
+            
+            # === KRITISCH FÜR LOW-LATENCY LIVE STREAMS ===
+            # Audio deaktivieren - verhindert A-V Desync komplett
+            '--no-audio',
+            
+            # Timing: Frames so schnell wie möglich anzeigen
+            '--untimed',                       # Keine Timing-Synchronisation
+            '--video-sync=desync',             # Kein Sync mit irgendwas
+            '--framedrop=decoder+vo',          # Frames droppen bei Überlast
+            
+            # Buffer minimieren
             '--no-cache',
-            '--demuxer-lavf-o=fflags=+nobuffer+discardcorrupt',
-            '--demuxer-lavf-analyzeduration=0',
-            '--demuxer-lavf-probesize=32',
             '--demuxer-readahead-secs=0',      # Kein Vorauslesen
             '--demuxer-max-bytes=50000',       # Nur 50KB Buffer
             '--demuxer-max-back-bytes=0',      # Kein Rückwärts-Buffer
-            '--video-sync=desync',             # Video unabhängig von Audio
+            '--demuxer-lavf-o=fflags=+nobuffer+discardcorrupt',
+            '--demuxer-lavf-analyzeduration=0',
+            '--demuxer-lavf-probesize=32',
             '--interpolation=no',
-            '--framedrop=decoder+vo',          # Aggressive Frame-Drops
-            '--vd-lavc-threads=4',
-            '--vd-lavc-skiploopfilter=all',    # Skip Deblocking für Speed
+            
             # Netzwerk
             '--network-timeout=10',
             '--stream-lavf-o=reconnect=1,reconnect_streamed=1,reconnect_delay_max=2',
-            # Audio - asynchron abspielen ohne Video zu blockieren
-            '--audio-channels=stereo',
-            '--volume=100',
         ]
         
         # Hardware-Beschleunigung für Raspberry Pi 4
