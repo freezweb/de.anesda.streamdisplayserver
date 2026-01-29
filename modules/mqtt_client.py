@@ -25,6 +25,8 @@ class MQTTClient:
         self._running = False
         self._thread = None
         self._unifi_client = None
+        self._reconnect_count = 0
+        self._max_reconnect_delay = 60  # Max 60 Sekunden zwischen Reconnects
     
     def set_unifi_client(self, unifi_client):
         """Setzt die UniFi Protect Client Referenz"""
@@ -55,6 +57,15 @@ class MQTTClient:
     
     def _connect(self):
         """Stellt Verbindung zum MQTT Broker her"""
+        # Alten Client sauber beenden
+        if self.client:
+            try:
+                self.client.loop_stop()
+                self.client.disconnect()
+            except:
+                pass
+            self.client = None
+        
         try:
             broker = self.config.get('mqtt.broker', 'localhost')
             port = self.config.get('mqtt.port', 1883)
@@ -103,6 +114,7 @@ class MQTTClient:
         """Callback bei erfolgreicher Verbindung"""
         if rc == 0:
             self._connected = True
+            self._reconnect_count = 0  # Reset bei erfolgreicher Verbindung
             logger.info("MQTT verbunden")
             
             topic_base = self._get_topic_base()
@@ -132,10 +144,15 @@ class MQTTClient:
         self._connected = False
         logger.warning(f"MQTT Verbindung getrennt: {rc}")
         
-        # Automatischer Reconnect
+        # Automatischer Reconnect mit exponential backoff
         if self._running:
-            time.sleep(5)
-            self._connect()
+            self._reconnect_count += 1
+            # Exponential backoff: 5, 10, 20, 40, 60, 60, 60...
+            delay = min(5 * (2 ** (self._reconnect_count - 1)), self._max_reconnect_delay)
+            logger.info(f"MQTT Reconnect in {delay} Sekunden (Versuch {self._reconnect_count})")
+            time.sleep(delay)
+            if self._running:  # Nochmal prüfen nach dem Sleep
+                self._connect()
     
     def _on_message(self, client, userdata, msg):
         """Callback bei eingehender Nachricht"""
