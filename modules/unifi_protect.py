@@ -22,6 +22,7 @@ class UniFiProtectClient:
         self.mqtt_client = mqtt_client
         
         self.url = config_manager.get('unifi_protect.url', '')
+        self.api_key = config_manager.get('unifi_protect.api_key', '')
         self.username = config_manager.get('unifi_protect.username', '')
         self.password = config_manager.get('unifi_protect.password', '')
         self.verify_ssl = config_manager.get('unifi_protect.verify_ssl', False)
@@ -38,8 +39,8 @@ class UniFiProtectClient:
     
     def start(self):
         """Startet den UniFi Protect Client"""
-        if not self.url or not self.username:
-            logger.warning("UniFi Protect nicht konfiguriert")
+        if not self.url or (not self.api_key and not self.username):
+            logger.warning("UniFi Protect nicht konfiguriert (URL und API-Key oder Username benötigt)")
             return
         
         self._running = True
@@ -64,7 +65,26 @@ class UniFiProtectClient:
                 import urllib3
                 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
             
-            # Login
+            # API-Key Authentifizierung (bevorzugt)
+            if self.api_key:
+                self._session.headers.update({
+                    'X-API-KEY': self.api_key,
+                    'Accept': 'application/json'
+                })
+                
+                # Teste Verbindung mit Bootstrap-API
+                bootstrap_url = urljoin(self.url, '/proxy/protect/api/bootstrap')
+                response = self._session.get(bootstrap_url)
+                
+                if response.status_code == 200:
+                    self._connected = True
+                    logger.info("UniFi Protect verbunden (API-Key)")
+                    return True
+                else:
+                    logger.error(f"UniFi Protect API-Key Auth fehlgeschlagen: {response.status_code}")
+                    return False
+            
+            # Fallback: Username/Password Login
             login_url = urljoin(self.url, '/api/auth/login')
             
             response = self._session.post(
@@ -85,7 +105,7 @@ class UniFiProtectClient:
                     self._token = response.headers['Authorization']
                 
                 self._connected = True
-                logger.info("UniFi Protect verbunden")
+                logger.info("UniFi Protect verbunden (Login)")
                 return True
             else:
                 logger.error(f"UniFi Protect Login fehlgeschlagen: {response.status_code}")
