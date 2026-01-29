@@ -39,13 +39,12 @@ class UniFiProtectClient:
         self._update_thread: Optional[threading.Thread] = None
         self._update_interval = 60  # Sekunden
         
-        # API Base Path - UniFi Protect verwendet verschiedene Pfade
-        # Cloud Key: /proxy/protect/api/
-        # UNVR/NVR Pro: /api/ oder /proxy/protect/api/
+        # API Base Path - UniFi Protect Integration API v1
+        # Offizieller Pfad laut Dokumentation: /proxy/protect/integration/v1/
         self._api_paths = [
+            '/proxy/protect/integration/v1',
             '/proxy/protect/api',
-            '/api',
-            '/protect/api'
+            '/api'
         ]
         self._active_api_path = None
     
