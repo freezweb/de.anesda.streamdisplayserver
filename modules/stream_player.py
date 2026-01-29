@@ -130,9 +130,15 @@ class StreamPlayer:
         ]
         
         # Hardware-Beschleunigung für Raspberry Pi
+        # Hinweis: hwdec=drm funktioniert oft nicht gut mit HEVC-Streams
+        # Verwende v4l2 oder deaktiviere für bessere Kompatibilität
         if hw_accel:
             args.extend([
-                '--hwdec=drm',
+                '--hwdec=v4l2',  # V4L2 für H.264, fällt bei HEVC auf Software zurück
+            ])
+        else:
+            args.extend([
+                '--hwdec=no',
             ])
         
         # Video-Output: DRM direkt auf Framebuffer (ohne Desktop)
@@ -140,7 +146,7 @@ class StreamPlayer:
         args.extend([
             '--vo=drm',
             '--drm-connector=HDMI-A-1',
-            '--drm-mode=1920x1080',
+            '--drm-mode=1',  # Modus 1 = 1920x1080@60Hz (Nummer, nicht String)
         ])
         logger.info("Verwende DRM Video-Output (Konsole)")
         
