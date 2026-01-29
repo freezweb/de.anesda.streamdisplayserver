@@ -94,6 +94,11 @@ class StreamPlayer:
             '--no-input-default-bindings',
             '--really-quiet',
             '--no-terminal',
+            '--no-input-terminal',        # Keine Terminal-Eingabe erwarten
+            '--input-ipc-server=/tmp/mpv-socket',  # IPC für Steuerung
+            '--force-window=immediate',   # Fenster sofort erstellen
+            '--keep-open=no',             # Nicht auf Eingabe warten am Ende
+            '--idle=no',                  # Nicht im Idle-Modus starten
             # Niedrige Latenz Einstellungen
             '--profile=low-latency',
             '--untimed',
